@@ -18,20 +18,35 @@ https://docs.oracle.com/database/121/RACAD/GUID-6C72F02D-BB43-4C56-9F46-244C8D6B
 https://logicalread.com/virtual-ip-with-oracle-rac-mc04/#.Yz5BSHZBxD8
 https://docs.oracle.com/cd/E11882_01/network.112/e10835/sqlnet.htm#NETRF210
 
-## 
+## Failover TNS 작성
 FAILOVER_MODE
-- TYPE: SESSION, SELECT
-- METHOD: BASIC, PRECONNECT
+- TYPE: 
+    - SESSION
+        - 재접속이 필요없음
+        - select 구문으로 fetch 도중 장애 발생시 실패
+        - 세션이 자동으로 다른 인스턴스에 접속
+    - SELECT
+        - 재접속 불필요
+        - Select 구문으로 fetch하던 레코드를 복구함
+        - 세션이 자동으로 다른 인스턴스에 접속
+- METHOD: 
+    - BASIC
+        - On-demand 방식
+        - Failover 발생시 정상 인스턴스로 oracle server process를 가동
+        - 2개 노드 운영시 한개 노드로 세션이 쏠리는 현상(과부가 발생 가능)
+    - PRECONNECT
+        - 다른 노드에 미리 oracle server process를 가동해 두고 장애시 전환하는 오버헤드를 줄일 수 있음
+        - 불필요한 프로세스를 미리 생성해 두는 것이기 때문에 자원 낭비
 
 ```
-TAF =
+TNSNAME =
   (DESCRIPTION =
-    (ADDRESS = (PROTOCOL = TCP)(HOST = edudb2_vip)(PORT = 2000))
-    (ADDRESS = (PROTOCOL = TCP)(HOST = edudb1_vip)(PORT = 2000))
+    (ADDRESS = (PROTOCOL = TCP)(HOST = vip1)(PORT = 1521))
+    (ADDRESS = (PROTOCOL = TCP)(HOST = vip2)(PORT = 1521))
     (LOAD_BALANCE = no)
     (CONNECT_DATA =
       (SERVER = DEDICATED)
-      (SERVICE_NAME = SCONDB)
+      (SERVICE_NAME = TESTDB)
       (FAILOVER_MODE =
         (TYPE = SELECT)
         (METHOD = BASIC)
